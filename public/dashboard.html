@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>API Monitor</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem; background: #f5f5f5; }
+    h1 { color: #222; }
+    table { border-collapse: collapse; width: 100%; background: white; }
+    th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #ddd; }
+    th { background: #333; color: white; }
+    .CRITICAL { background: #e74c3c; color: white; }
+    .WARNING { background: #f39c12; color: white; }
+    .OK { background: #2ecc71; color: white; }
+    #summary { margin-bottom: 1rem; font-size: 1.1rem; }
+  </style>
+</head>
+<body>
+  <h1>API Monitor</h1>
+  <div id="summary">Loading...</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Service</th>
+        <th>Path</th>
+        <th>Total</th>
+        <th>5xx Errors</th>
+        <th>Error Rate</th>
+        <th>P50</th>
+        <th>P95</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="rows">
+    </tbody>
+  </table>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
