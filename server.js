@@ -114,10 +114,19 @@ app.get("/stats", (req, res) => {
     GROUP BY service, path
   `).all();
 
-  const knownPaths = new Set(
-    db.prepare(`SELECT service, path FROM known_paths`).all()
-      .map(row => `${row.service}::${row.path}`)
-  );
+  const knownPathsList = db.prepare(`SELECT service, path FROM known_paths`).all();
+
+  function isPathKnown(service, path) {
+    return knownPathsList.some(kp => {
+      if (kp.service !== service) return false;
+      if (kp.path === path) return true;
+      if (kp.path.endsWith("/*")) {
+        const prefix = kp.path.slice(0, -2);
+        return path.startsWith(prefix + "/");
+      }
+      return false;
+    });
+  }
 
   const endpointStats = endpoints.map((ep) => {
     const epDurations = db
@@ -125,7 +134,7 @@ app.get("/stats", (req, res) => {
       .all(ep.path, ep.service)
       .map((row) => row.duration_ms);
 
-    const isKnown = knownPaths.has(`${ep.service}::${ep.path}`);
+    const isKnown = isPathKnown(ep.service, ep.path);
 
     return {
       service: ep.service,
