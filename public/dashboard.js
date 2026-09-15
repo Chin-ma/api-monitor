@@ -1,6 +1,8 @@
-function getStatus(errorRate) {
-  if (errorRate >= 5) return "CRITICAL";
-  if (errorRate > 0) return "WARNING";
+function getStatus(ep) {
+  if (!ep.known) return "UNKNOWN";
+  const rate = parseFloat(ep.errorRate);
+  if (rate >= 5) return "CRITICAL";
+  if (rate > 0) return "WARNING";
   return "OK";
 }
 
@@ -12,8 +14,7 @@ async function loadStats() {
     `Total requests: ${data.total} | Total 5xx errors: ${data.errors5xx} | Overall error rate: ${data.errorRate}`;
 
   const rowsHtml = data.endpoints.map(ep => {
-    const rate = (ep.errors5xx / ep.total) * 100;
-    const status = getStatus(rate);
+    const status = getStatus(ep);
 
     return `
       <tr class="${status}">
@@ -21,7 +22,7 @@ async function loadStats() {
         <td>${ep.path}</td>
         <td>${ep.total}</td>
         <td>${ep.errors5xx}</td>
-        <td>${rate.toFixed(2)}%</td>
+        <td>${ep.errorRate}</td>
         <td>${ep.p50} ms</td>
         <td>${ep.p95} ms</td>
         <td>${status}</td>

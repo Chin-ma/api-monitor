@@ -108,10 +108,16 @@ app.get("/stats", (req, res) => {
       service,
       path,
       COUNT(*) as total,
-      SUM(CASE WHEN status_code >= 500 THEN 1 ELSE 0 END) as errors5xx
+      SUM(CASE WHEN status_code >= 500 THEN 1 ELSE 0 END) as errors5xx,
+      SUM(CASE WHEN status_code >= 400 AND status_code < 500 THEN 1 ELSE 0 END) as errors4xx
     FROM requests
     GROUP BY service, path
   `).all();
+
+  const knownPaths = new Set(
+    db.prepare(`SELECT service, path FROM known_paths`).all()
+      .map(row => `${row.service}::${row.path}`)
+  );
 
   const endpointStats = endpoints.map((ep) => {
     const epDurations = db
@@ -119,14 +125,18 @@ app.get("/stats", (req, res) => {
       .all(ep.path, ep.service)
       .map((row) => row.duration_ms);
 
+    const isKnown = knownPaths.has(`${ep.service}::${ep.path}`);
+
     return {
       service: ep.service,
       path: ep.path,
       total: ep.total,
+      errors4xx: ep.errors4xx,
       errors5xx: ep.errors5xx,
-      errorRate: ((ep.errors5xx / ep.total) * 100).toFixed(2) + "%",
+      errorRate: (((ep.errors4xx + ep.errors5xx) / ep.total) * 100).toFixed(2) + "%",
       p50: percentile(epDurations, 50),
       p95: percentile(epDurations, 95),
+      known: isKnown,
     };
   });
 
