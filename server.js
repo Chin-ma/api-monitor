@@ -13,6 +13,14 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS known_paths (
+    service TEXT,
+    path TEXT,
+    UNIQUE(service, path)
+  )
+`);
+
 try {
   db.exec(`ALTER TABLE requests ADD COLUMN service TEXT`);
 } catch (e) {
@@ -51,6 +59,19 @@ app.post("/collect", (req, res) => {
     INSERT INTO requests (method, path, status_code, duration_ms, timestamp, service)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(method, path, status_code, duration_ms, Date.now(), service);
+
+  res.sendStatus(200);
+});
+
+app.post("/register-service", (req, res) => {
+  const { service, paths } = req.body;
+
+  if (!service || !Array.isArray(paths)) {
+    return res.status(400).json({ error: "service and paths[] required" });
+  }
+
+  const insert = db.prepare(`INSERT OR IGNORE INTO known_paths (service, path) VALUES (?, ?)`);
+  paths.forEach(p => insert.run(service, p));
 
   res.sendStatus(200);
 });
