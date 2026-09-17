@@ -1,6 +1,7 @@
 const express = require("express");
 const Database = require("better-sqlite3");
 const db = new Database("data/monitor.db");
+const cron = require("node-cron");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS requests (
@@ -161,8 +162,50 @@ app.get("/stats", (req, res) => {
   });
 });
 
+function cleanupUnknown() {
+  const cutoff = Date.now() - (7 * 24 * 60 * 60 * 1000); // 7 days ago
+
+  const knownPathsList = db.prepare(`SELECT service, path FROM known_paths`).all();
+
+  function isPathKnown(service, path) {
+    return knownPathsList.some(kp => {
+      if (kp.service !== service) return false;
+      if (kp.path === path) return true;
+      if (kp.path.endsWith("/*")) {
+        const prefix = kp.path.slice(0, -2);
+        return path.startsWith(prefix + "/");
+      }
+      return false;
+    });
+  }
+
+  const allRows = db.prepare("SELECT id, service, path, timestamp FROM requests WHERE timestamp < ?").all(cutoff);
+
+  let deleted = 0;
+  const del = db.prepare("DELETE FROM requests WHERE id = ?");
+  allRows.forEach(row => {
+    if (!isPathKnown(row.service, row.path)) {
+      del.run(row.id);
+      deleted++;
+    }
+  });
+
+  console.log(`[cleanup] Deleted ${deleted} old unknown rows.`);
+  return deleted;
+}
+
+app.post("/cleanup-unknown", (req, res) => {
+  const deleted = cleanupUnknown();
+  res.json({ deleted });
+});
+
 app.get("/dashboard", (req, res) => {
   res.sendFile(__dirname + "/public/dashboard.html");
+});
+
+cron.schedule("0 3 * * *", () => {
+  console.log("[cleanup] Running scheduled unknown-path cleanup...");
+  cleanupUnknown();
 });
 
 app.listen(3000, () => {
