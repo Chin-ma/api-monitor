@@ -163,7 +163,7 @@ app.get("/stats", (req, res) => {
 });
 
 function cleanupUnknown() {
-  const cutoff = Date.now() - (7 * 24 * 60 * 60 * 1000); // 7 days ago
+  const cutoff = Date.now() - (2 * 24 * 60 * 60 * 1000); // 2 days ago
 
   const knownPathsList = db.prepare(`SELECT service, path FROM known_paths`).all();
 
