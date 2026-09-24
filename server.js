@@ -194,6 +194,13 @@ function cleanupUnknown() {
   return deleted;
 }
 
+function cleanupOld() {
+  const cutoff = Date.now() - (3 * 24 * 60 * 60 * 1000); // 3 days ago
+  const result = db.prepare("DELETE FROM requests WHERE timestamp < ?").run(cutoff);
+  console.log(`[cleanup] Deleted ${result.changes} rows older than 3 days.`);
+  return result.changes;
+}
+
 app.post("/cleanup-unknown", (req, res) => {
   const deleted = cleanupUnknown();
   res.json({ deleted });
@@ -207,6 +214,11 @@ cron.schedule("0 * * * *", () => {
   console.log("[cleanup] Running scheduled unknown-path cleanup...");
   cleanupUnknown();
 });
+
+cron.schedule("0 3 * * *", () => {
+  console.log("[cleanup] Running daily full retention cleanup...");
+  cleanupOld();
+})
 
 app.listen(3000, () => {
   console.log("API running on http://localhost:3000");
