@@ -163,7 +163,7 @@ app.get("/stats", (req, res) => {
 });
 
 function cleanupUnknown() {
-  const cutoff = Date.now() - (1 * 24 * 60 * 60 * 1000); // 1 day ago
+  const cutoff = Date.now() - (3 * 60 * 60 * 1000); // 3 hours ago
 
   const knownPathsList = db.prepare(`SELECT service, path FROM known_paths`).all();
 
@@ -203,7 +203,7 @@ app.get("/dashboard", (req, res) => {
   res.sendFile(__dirname + "/public/dashboard.html");
 });
 
-cron.schedule("0 3 * * *", () => {
+cron.schedule("0 * * * *", () => {
   console.log("[cleanup] Running scheduled unknown-path cleanup...");
   cleanupUnknown();
 });
