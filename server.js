@@ -195,7 +195,7 @@ function cleanupUnknown() {
 }
 
 function cleanupOld() {
-  const cutoff = Date.now() - (3 * 24 * 60 * 60 * 1000); // 3 days ago
+  const cutoff = Date.now() - (2 * 24 * 60 * 60 * 1000); // 2 days ago
   const result = db.prepare("DELETE FROM requests WHERE timestamp < ?").run(cutoff);
   console.log(`[cleanup] Deleted ${result.changes} rows older than 3 days.`);
   return result.changes;
