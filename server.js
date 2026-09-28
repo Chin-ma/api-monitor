@@ -211,6 +211,11 @@ app.post("/cleanup-old", (req, res) => {
   res.json({ deleted });
 });
 
+app.post("/vacuum", (req, res) => {
+  db.exec("VACUUM");
+  res.json({ status: "vacuumed" });
+});
+
 app.get("/dashboard", (req, res) => {
   res.sendFile(__dirname + "/public/dashboard.html");
 });
