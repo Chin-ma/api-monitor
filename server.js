@@ -206,6 +206,11 @@ app.post("/cleanup-unknown", (req, res) => {
   res.json({ deleted });
 });
 
+app.post("/cleanup-old", (req, res) => {
+  const deleted = cleanupOld();
+  res.json({ deleted });
+});
+
 app.get("/dashboard", (req, res) => {
   res.sendFile(__dirname + "/public/dashboard.html");
 });
