@@ -201,6 +201,40 @@ function cleanupOld() {
   return result.changes;
 }
 
+function deleteAllUnknown() {
+  const knownPathsList = db.prepare(`SELECT service, path FROM known_paths`).all();
+
+  function isPathKnown(service, path) {
+    return knownPathsList.some(kp => {
+      if (kp.service !== service) return false;
+      if (kp.path === path) return true;
+      if (kp.path.endsWith("/*")) {
+        const prefix = kp.path.slice(0, -2);
+        return path.startsWith(prefix + "/");
+      }
+      return false;
+    });
+  }
+
+  const allRows = db.prepare("SELECT id, service, path FROM requests").all();
+
+  const del = db.prepare("DELETE FROM requests WHERE id = ?");
+  let deleted = 0;
+
+  const run = db.transaction(() => {
+    allRows.forEach(row => {
+      if (!isPathKnown(row.service, row.path)) {
+        del.run(row.id);
+        deleted++;
+      }
+    });
+  });
+  run();
+
+  console.log(`[cleanup] Deleted ${deleted} unknown rows (all ages).`);
+  return deleted;
+}
+
 app.post("/cleanup-unknown", (req, res) => {
   const deleted = cleanupUnknown();
   res.json({ deleted });
@@ -214,6 +248,11 @@ app.post("/cleanup-old", (req, res) => {
 app.post("/vacuum", (req, res) => {
   db.exec("VACUUM");
   res.json({ status: "vacuumed" });
+});
+
+app.post("/cleanup-unknown-now", (req, res) => {
+  const deleted = deleteAllUnknown();
+  res.json({ deleted });
 });
 
 app.get("/dashboard", (req, res) => {
