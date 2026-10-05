@@ -3,6 +3,7 @@ const Database = require("better-sqlite3");
 const db = new Database("data/monitor.db");
 const cron = require("node-cron");
 
+// test
 db.exec(`
   CREATE TABLE IF NOT EXISTS requests (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
